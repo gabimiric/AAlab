@@ -1,15 +1,10 @@
 import time
 import matplotlib.pyplot as plt
 import random
-import tkinter as tk
-from tkinter import simpledialog
+import sys
+sys.setrecursionlimit(10**6)  # Increase recursion limit to 1,000,000
 
-from sympy import false
-
-snapshots = []
-
-def captureSnapshot(arr):
-    snapshots.append(arr[:])
+PAUSE = 0.1 # Global pause for visualization
 
 # QuickSort
 def partition(array, low, high):
@@ -25,15 +20,14 @@ def partition(array, low, high):
     return i + 1
 
 
-def quickSort(array, start, end, snap = false):
+def quickSort(array, start, end):
     if start < end:
         piv = partition(array, start, end)
-        if (snap) : captureSnapshot(array)
         quickSort(array, start, piv - 1)  # Sort left part
         quickSort(array, piv + 1, end)  # Sort right part
 
 # MergeSort
-def merge(arr, l, m, r, snap):
+def merge(arr, l, m, r):
     L = arr[l:m + 1]  # Left half
     R = arr[m + 1:r + 1]  # Right half
 
@@ -48,30 +42,26 @@ def merge(arr, l, m, r, snap):
             arr[k] = R[j]
             j += 1
         k += 1
-        if (snap) : captureSnapshot(arr[:])
 
     while i < len(L):  # Copy remaining elements of L
         arr[k] = L[i]
         i += 1
         k += 1
-        if (snap): captureSnapshot(arr[:])
 
     while j < len(R):  # Copy remaining elements of R
         arr[k] = R[j]
         j += 1
         k += 1
-        if (snap): captureSnapshot(arr[:])
 
-
-def mergeSort(arr, l, r, snap = false):
+def mergeSort(arr, l, r):
     if l < r:
         m = l + (r - l) // 2  # Middle index
         mergeSort(arr, l, m)  # Sort left half
         mergeSort(arr, m + 1, r)  # Sort right half
-        merge(arr, l, m, r, snap)  # Merge sorted halves
+        merge(arr, l, m, r)  # Merge sorted halves
 
 # HeapSort
-def heapify(arr, n, i, snap):
+def heapify(arr, n, i):
     largest = i  # Assume root is largest
     l = 2 * i + 1  # Left child
     r = 2 * i + 2  # Right child
@@ -84,8 +74,7 @@ def heapify(arr, n, i, snap):
 
     if largest != i:
         arr[i], arr[largest] = arr[largest], arr[i]  # Swap with largest
-        if (snap) : captureSnapshot(arr[:])
-        heapify(arr, n, largest, snap)  # Recursively heapify the affected subtree
+        heapify(arr, n, largest)  # Recursively heapify the affected subtree
 
 def countingSort(arr):
     max_val = max(arr)
@@ -100,15 +89,15 @@ def countingSort(arr):
             arr.append(i)
             count[i] -= 1
 
-def heapSort(arr, snap=false):
+def heapSort(arr):
     n = len(arr)
 
     for i in range(n // 2 - 1, -1, -1):  # Build max heap
-        heapify(arr, n, i, snap)
+        heapify(arr, n, i)
 
     for i in range(n - 1, 0, -1):  # Extract elements one by one
         arr[i], arr[0] = arr[0], arr[i]  # Move max to end
-        heapify(arr, i, 0, snap)  # Restore heap property
+        heapify(arr, i, 0)  # Restore heap property
 
 def measure_time(arr):
     methods = ["quickSort", "mergeSort", "heapSort", "countSort"]
@@ -136,11 +125,11 @@ arrays = [
 
     random.sample(range(0, 100000), 100000),
 
-    random.sample(range(0, 500000), 500000)
+    random.sample(range(0, 200000), 200000)
 ]
 
 # Array names for printing purposes
-array_names = ["100 Elements", "1K Elements", "10K Elements", "100K Elements", "500K Elements"]
+array_names = ["100 Elements", "1K Elements", "10K Elements", "100K Elements", "200K Elements"]
 
 # Print the header
 print(f"{'Elements':<15}{'QuickSort (ms)':<20}{'MergeSort (ms)':<20}{'HeapSort (ms)':<20}{'CountingSort (ms)'}")
@@ -160,7 +149,7 @@ for i, arr in enumerate(arrays):
     counting_sort_times.append(times["countSort"])
 
 # Plotting
-x_values = [100, 1000, 10000, 100000, 500000]
+x_values = [100, 1000, 10000, 100000, 200000]
 plt.figure(figsize=(10, 6))
 plt.plot(x_values, quick_sort_times, marker='o', linestyle='-', label="QuickSort")
 plt.plot(x_values, merge_sort_times, marker='s', linestyle='-', label="MergeSort")
@@ -179,9 +168,57 @@ plt.grid(True, which="both", linestyle="--", linewidth=0.5)
 # Show plot
 plt.show()
 
-import time
-import matplotlib.pyplot as plt
-import random
+# Sorted test arrays
+sorted_ascending = list(range(10000))  # Sorted in ascending order
+sorted_descending = list(range(9999, -1, -1))  # Sorted in descending order
+almost_sorted_ascending = sorted_ascending[:]
+almost_sorted_descending = sorted_descending[:]
+
+# Introduce slight randomness to make them "almost sorted"
+for _ in range(10):  # Swap 10 random pairs
+    i, j = random.sample(range(10000), 2)
+    almost_sorted_ascending[i], almost_sorted_ascending[j] = almost_sorted_ascending[j], almost_sorted_ascending[i]
+    almost_sorted_descending[i], almost_sorted_descending[j] = almost_sorted_descending[j], almost_sorted_descending[i]
+
+# New array list and names
+new_arrays = [sorted_ascending, sorted_descending, almost_sorted_ascending, almost_sorted_descending]
+new_array_names = ["Sorted Asc", "Sorted Desc", "Almost Sorted Asc", "Almost Sorted Desc"]
+
+# Measure time for the new arrays
+quick_sort_times_new = []
+merge_sort_times_new = []
+heap_sort_times_new = []
+counting_sort_times_new = []
+
+# Print the header for the new table
+print(f"\n{'Array Type (10K)':<20}{'QuickSort (ms)':<20}{'MergeSort (ms)':<20}{'HeapSort (ms)':<20}{'CountingSort (ms)'}")
+
+# Measure and print results for the new arrays
+for i, arr in enumerate(new_arrays):
+    times = measure_time(arr)
+    print(f"{new_array_names[i]:<20}{times['quickSort']:<20.4f}{times['mergeSort']:<20.4f}{times['heapSort']:<20.4f}{times['countSort']:<.4f}")
+    quick_sort_times_new.append(times["quickSort"])
+    merge_sort_times_new.append(times["mergeSort"])
+    heap_sort_times_new.append(times["heapSort"])
+    counting_sort_times_new.append(times["countSort"])
+
+# Plotting the new results
+plt.figure(figsize=(10, 6))
+plt.plot(new_array_names, quick_sort_times_new, marker='o', linestyle='-', label="QuickSort")
+plt.plot(new_array_names, merge_sort_times_new, marker='s', linestyle='-', label="MergeSort")
+plt.plot(new_array_names, heap_sort_times_new, marker='^', linestyle='-', label="HeapSort")
+plt.plot(new_array_names, counting_sort_times_new, marker='d', linestyle='-', label="CountingSort")
+
+# Labels and title
+plt.xlabel("Array Type")
+plt.ylabel("Time (ms)")
+plt.title("Sorting Algorithm Efficiency on Special Arrays")
+plt.legend()
+plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+
+# Show plot
+plt.show()
+
 import tkinter as tk
 from tkinter import simpledialog
 
@@ -203,11 +240,8 @@ def visualize_heap_sort(arr):
     plt.show()
 
 def visualize_counting_sort(arr):
-    plt.figure(figsize=(10, 6))
     counting_sort_display(arr)
     plt.show()
-
-# Sorting functions without snapshots
 
 def quick_sort_display(arr, low=0, high=None):
     if high is None:
@@ -216,7 +250,7 @@ def quick_sort_display(arr, low=0, high=None):
         pivot = partition(arr, low, high)
         plt.clf()
         plt.bar(range(len(arr)), arr, color='blue')
-        plt.pause(0.01)
+        plt.pause(PAUSE)
         quick_sort_display(arr, low, pivot - 1)
         quick_sort_display(arr, pivot + 1, high)
 
@@ -240,7 +274,7 @@ def merge_sort_display(arr, l=0, r=None):
         merge(arr, l, m, r)
         plt.clf()
         plt.bar(range(len(arr)), arr, color='blue')
-        plt.pause(0.01)
+        plt.pause(PAUSE)
 
 def merge(arr, l, m, r):
     left = arr[l:m + 1]
@@ -272,7 +306,7 @@ def heap_sort_display(arr):
         arr[i], arr[0] = arr[0], arr[i]
         plt.clf()
         plt.bar(range(len(arr)), arr, color='blue')
-        plt.pause(0.01)
+        plt.pause(PAUSE)
         heapify(arr, i, 0)
 
 def heapify(arr, n, i):
@@ -312,7 +346,7 @@ def counting_sort_display(arr):
             axes[1].bar(range(len(count)), count, color='red')
             axes[1].set_title("Count Array")
 
-            plt.pause(0.01)
+            plt.pause(PAUSE)
 
 # Prompt for sorting visualization
 
@@ -327,7 +361,7 @@ def select_sorting():
         if not sort_choice or sort_choice.lower() == "exit":
             break
 
-        arr = [random.randint(0,200) for _ in range(200)]
+        arr = [random.randint(0,1000) for _ in range(200)]
 
         if sort_choice.lower() == "quick":
             visualize_quick_sort(arr)
@@ -340,5 +374,4 @@ def select_sorting():
         else:
             print("Invalid selection.")
 
-# Run visualization selection
 select_sorting()
